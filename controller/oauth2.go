@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -84,8 +85,15 @@ func OAuth2Authorize(c *gin.Context) {
 		return
 	}
 
-	// User not logged in, show login page
-	renderOAuth2LoginPage(c, clientId, redirectURI, scope, state)
+	// User not logged in, redirect to frontend OAuth page
+	frontendURL := fmt.Sprintf("/oauth2/authorize?client_id=%s&redirect_uri=%s&response_type=%s&scope=%s&state=%s",
+		url.QueryEscape(clientId),
+		url.QueryEscape(redirectURI),
+		url.QueryEscape(responseType),
+		url.QueryEscape(scope),
+		url.QueryEscape(state),
+	)
+	c.Redirect(http.StatusFound, frontendURL)
 }
 
 // OAuth2AuthorizeSubmit handles POST /v1/oauth/authorize
