@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -157,4 +158,26 @@ func CleanupExpiredOAuthData() error {
 		return err
 	}
 	return nil
+}
+
+// SeedDefaultOAuthClients creates default OAuth clients if they don't exist
+func SeedDefaultOAuthClients() {
+	defaults := []OAuthClient{
+		{
+			ClientId:     "claude-code-haha",
+			ClientSecret: "lumio-claude-code-haha-secret",
+			Name:         "Claude Code Haha",
+			RedirectURIs: "http://localhost",
+			Scopes:       "read",
+		},
+	}
+
+	for _, client := range defaults {
+		existing, _ := GetOAuthClientByClientId(client.ClientId)
+		if existing == nil {
+			if err := CreateOAuthClient(&client); err == nil {
+				fmt.Printf("[OAuth2] Created default client: %s (client_id: %s)\n", client.Name, client.ClientId)
+			}
+		}
+	}
 }

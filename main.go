@@ -270,6 +270,9 @@ func InitResources() error {
 
 	model.CheckSetup()
 
+	// Seed default OAuth 2.0 clients
+	model.SeedDefaultOAuthClients()
+
 	// Initialize options, should after model.InitDB()
 	model.InitOptionMap()
 
