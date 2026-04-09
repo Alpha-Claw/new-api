@@ -12,17 +12,6 @@ import (
 )
 
 func SetApiRouter(router *gin.Engine) {
-	// OAuth 2.0 Authorization Server endpoints (outside apiRouter to skip GlobalAPIRateLimit)
-	oauth2Router := router.Group("/api/oauth2")
-	oauth2Router.Use(middleware.RouteTag("oauth"))
-	oauth2Router.Use(gzip.Gzip(gzip.DefaultCompression))
-	{
-		oauth2Router.GET("/authorize", controller.OAuth2Authorize)
-		oauth2Router.POST("/authorize", controller.OAuth2AuthorizeSubmit)
-		oauth2Router.POST("/token", controller.OAuth2Token)
-		oauth2Router.GET("/userinfo", controller.OAuth2UserInfo)
-	}
-
 	apiRouter := router.Group("/api")
 	apiRouter.Use(middleware.RouteTag("api"))
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
@@ -56,6 +45,12 @@ func SetApiRouter(router *gin.Engine) {
 		// Standard OAuth providers (GitHub, Discord, OIDC, LinuxDO) - unified route
 		apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), controller.HandleOAuth)
 		apiRouter.GET("/ratio_config", middleware.CriticalRateLimit(), controller.GetRatioConfig)
+
+		// OAuth 2.0 Authorization Server endpoints (public, no auth required)
+		apiRouter.GET("/oauth2/authorize", controller.OAuth2Authorize)
+		apiRouter.POST("/oauth2/authorize", controller.OAuth2AuthorizeSubmit)
+		apiRouter.POST("/oauth2/token", controller.OAuth2Token)
+		apiRouter.GET("/oauth2/userinfo", controller.OAuth2UserInfo)
 
 		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
 		apiRouter.POST("/creem/webhook", controller.CreemWebhook)
