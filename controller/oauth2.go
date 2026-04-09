@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -225,7 +226,14 @@ func handleAuthorizationCodeGrant(c *gin.Context) {
 	// Mark code as used
 	model.MarkAuthorizationCodeUsed(code)
 
-	// Create access token
+	// Create or find an API token for the user (this is the real token for /v1/messages)
+	apiKey, err := getOrCreateUserApiToken(authCode.UserId, clientId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": "Failed to create API token"})
+		return
+	}
+
+	// Also create an OAuth access token for userinfo endpoint
 	accessToken := &model.OAuthAccessToken{
 		ClientId:  clientId,
 		UserId:    authCode.UserId,
@@ -237,8 +245,9 @@ func handleAuthorizationCodeGrant(c *gin.Context) {
 		return
 	}
 
+	// Return the real API key as access_token so it can be used directly with /v1/messages
 	c.JSON(http.StatusOK, gin.H{
-		"access_token":  accessToken.AccessToken,
+		"access_token":  apiKey,
 		"token_type":    "Bearer",
 		"expires_in":    int(time.Until(accessToken.ExpiresAt).Seconds()),
 		"refresh_token": accessToken.RefreshToken,
@@ -370,6 +379,45 @@ func OAuth2DeleteClient(c *gin.Context) {
 }
 
 // --- Helpers ---
+
+// getOrCreateUserApiToken finds an existing API token for the user created by OAuth,
+// or creates a new one. This token is the real key for /v1/messages.
+func getOrCreateUserApiToken(userId int, clientId string) (string, error) {
+	tokenName := fmt.Sprintf("oauth-%s", clientId)
+
+	// Check if user already has an OAuth-created token
+	tokens, err := model.GetAllUserTokens(userId, 0, 100)
+	if err == nil {
+		for _, t := range tokens {
+			if t.Name == tokenName && t.Status == 1 {
+				return t.Key, nil
+			}
+		}
+	}
+
+	// Create a new unlimited API token for the user
+	key, err := common.GenerateKey()
+	if err != nil {
+		return "", err
+	}
+
+	now := common.GetTimestamp()
+	token := &model.Token{
+		UserId:         userId,
+		Name:           tokenName,
+		Key:            key,
+		CreatedTime:    now,
+		AccessedTime:   now,
+		ExpiredTime:    -1, // never expires
+		UnlimitedQuota: true,
+		Status:         1,
+	}
+	if err := token.Insert(); err != nil {
+		return "", err
+	}
+
+	return key, nil
+}
 
 func isValidRedirectURI(client *model.OAuthClient, uri string) bool {
 	// Allow localhost for development
