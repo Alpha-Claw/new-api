@@ -12,6 +12,17 @@ import (
 )
 
 func SetApiRouter(router *gin.Engine) {
+	// OAuth 2.0 Authorization Server endpoints (outside apiRouter to skip GlobalAPIRateLimit)
+	oauth2Router := router.Group("/api/oauth2")
+	oauth2Router.Use(middleware.RouteTag("oauth"))
+	oauth2Router.Use(gzip.Gzip(gzip.DefaultCompression))
+	{
+		oauth2Router.GET("/authorize", controller.OAuth2Authorize)
+		oauth2Router.POST("/authorize", controller.OAuth2AuthorizeSubmit)
+		oauth2Router.POST("/token", controller.OAuth2Token)
+		oauth2Router.GET("/userinfo", controller.OAuth2UserInfo)
+	}
+
 	apiRouter := router.Group("/api")
 	apiRouter.Use(middleware.RouteTag("api"))
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
