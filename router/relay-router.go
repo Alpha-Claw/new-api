@@ -67,7 +67,7 @@ func SetRelayRouter(router *gin.Engine) {
 		playgroundRouter.POST("/chat/completions", controller.Playground)
 	}
 	// OAuth 2.0 Authorization Server endpoints (no TokenAuth)
-	oauthRouter := router.Group("/v1/oauth")
+	oauthRouter := router.Group("/oauth2")
 	oauthRouter.Use(middleware.RouteTag("oauth"))
 	{
 		oauthRouter.GET("/authorize", controller.OAuth2Authorize)

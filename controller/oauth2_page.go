@@ -72,7 +72,7 @@ func renderOAuth2LoginPage(c *gin.Context, clientId, redirectURI, scope, state s
       if(!username||!password){err.textContent='请输入用户名和密码';err.style.display='block';return}
       btn.disabled=true;btn.textContent='授权中...';err.style.display='none';
       try{
-        const res=await fetch('/v1/oauth/authorize',{
+        const res=await fetch('/oauth2/authorize',{
           method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({
             username,password,
