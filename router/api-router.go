@@ -64,6 +64,8 @@ func SetApiRouter(router *gin.Engine) {
 			userRoute.GET("/logout", controller.Logout)
 			userRoute.POST("/epay/notify", controller.EpayNotify)
 			userRoute.GET("/epay/notify", controller.EpayNotify)
+			userRoute.POST("/xunhupay/notify", controller.XunhupayNotify)
+			userRoute.GET("/xunhupay/notify", controller.XunhupayNotify)
 			userRoute.GET("/groups", controller.GetUserGroups)
 
 			selfRoute := userRoute.Group("/")
@@ -86,6 +88,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/topup/self", controller.GetUserTopUps)
 				selfRoute.POST("/topup", middleware.CriticalRateLimit(), controller.TopUp)
 				selfRoute.POST("/pay", middleware.CriticalRateLimit(), controller.RequestEpay)
+			selfRoute.POST("/pay/xunhupay", middleware.CriticalRateLimit(), controller.RequestXunhupay)
 				selfRoute.POST("/amount", controller.RequestAmount)
 				selfRoute.POST("/stripe/pay", middleware.CriticalRateLimit(), controller.RequestStripePay)
 				selfRoute.POST("/stripe/amount", controller.RequestStripeAmount)
@@ -186,6 +189,15 @@ func SetApiRouter(router *gin.Engine) {
 			customOAuthRoute.POST("/", controller.CreateCustomOAuthProvider)
 			customOAuthRoute.PUT("/:id", controller.UpdateCustomOAuthProvider)
 			customOAuthRoute.DELETE("/:id", controller.DeleteCustomOAuthProvider)
+		}
+
+		// OAuth 2.0 client management (admin only)
+		oauth2ClientRoute := apiRouter.Group("/oauth2/clients")
+		oauth2ClientRoute.Use(middleware.AdminAuth())
+		{
+			oauth2ClientRoute.GET("/", controller.OAuth2ListClients)
+			oauth2ClientRoute.POST("/", controller.OAuth2CreateClient)
+			oauth2ClientRoute.DELETE("/:id", controller.OAuth2DeleteClient)
 		}
 		performanceRoute := apiRouter.Group("/performance")
 		performanceRoute.Use(middleware.RootAuth())
