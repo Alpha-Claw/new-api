@@ -420,8 +420,16 @@ func getOrCreateUserApiToken(userId int, clientId string) (string, error) {
 }
 
 func isValidRedirectURI(client *model.OAuthClient, uri string) bool {
-	// Allow localhost for development
+	// Allow localhost for development (any port)
 	if strings.HasPrefix(uri, "http://localhost") || strings.HasPrefix(uri, "http://127.0.0.1") {
+		return true
+	}
+	// Allow lumio.run URLs
+	if strings.HasPrefix(uri, "https://lumio.run") {
+		return true
+	}
+	// Allow any HTTPS URL for the claude-code-haha client (manual flow uses various redirect URIs)
+	if client.ClientId == "claude-code-haha" && strings.HasPrefix(uri, "https://") {
 		return true
 	}
 	allowed := strings.Split(client.RedirectURIs, ",")
